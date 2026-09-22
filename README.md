@@ -79,7 +79,7 @@
       <button id="bmThemeToggleBtn" style="background:var(--bm-bg-sec);border:1px solid var(--bm-border);width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--bm-text);">🌙</button>
     </div>
 
-    <!-- AUTH -->
+    <!-- AUTH SCREEN -->
     <div id="bmAuthScreen" style="padding:32px 24px;display:flex;flex-direction:column;flex:1;overflow-y:auto;gap:12px;background:var(--bm-bg);justify-content:center;">
       <div class="bm-anim-in" style="max-width:340px;margin:0 auto;width:100%;">
         <div style="text-align:center;margin-bottom:26px;">
@@ -97,7 +97,7 @@
       </div>
     </div>
 
-    <!-- SETUP -->
+    <!-- SETUP SCREEN -->
     <div id="bmSetupScreen" style="padding:18px;display:none;flex-direction:column;flex:1;overflow-y:auto;background:var(--bm-bg);gap:14px;" class="bm-scroll">
       <button id="bmBackToChatBtn" style="align-self:flex-start;background:none;border:none;color:var(--bm-text-muted);font-size:13.5px;font-weight:600;cursor:pointer;padding:0;">‹ Back to chat</button>
       <div class="bm-anim-in" style="display:flex;align-items:center;justify-content:space-between;background:var(--bm-bg-sec);border:1px solid var(--bm-border);padding:14px;border-radius:var(--bm-radius-lg);box-shadow:var(--bm-shadow-soft);">
@@ -127,7 +127,7 @@
       <button id="bmSignOutBtn" style="margin-top:2px;width:100%;padding:13px;background:transparent;color:var(--bm-danger);border:1px solid rgba(255,93,108,0.4);border-radius:var(--bm-radius-sm);cursor:pointer;font-size:0.88rem;font-weight:600;">Sign Out</button>
     </div>
 
-    <!-- CHAT -->
+    <!-- CHAT SCREEN -->
     <div id="bmChatScreen" style="display:none;flex-direction:column;flex:1;background:var(--bm-bg);overflow:hidden;position:relative;">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bm-bg-sec);border-bottom:1px solid var(--bm-border);flex-shrink:0;">
         <button id="bmLeaveRoomBtn" title="Edit profile" style="background:none;color:var(--bm-text-muted);border:none;cursor:pointer;font-size:17px;padding:0;font-weight:600;">⚙</button>
@@ -143,7 +143,7 @@
         <button id="bmPopoutBtn" title="Open in a new tab — needed for camera/mic when this page is embedded" style="display:none;padding:9px 12px;background:var(--bm-bg);border:1px solid var(--bm-border-input);color:var(--bm-text-muted);border-radius:var(--bm-radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;">↗ Open for calls</button>
       </div>
 
-      <!-- Incoming call / invite banner -->
+      <!-- Incoming call banner -->
       <div id="bmIncomingCallBanner" style="display:none;position:absolute;top:98px;left:12px;right:12px;z-index:30;background:var(--bm-bg-elev);border:1px solid var(--bm-accent-a);border-radius:var(--bm-radius-md);padding:12px 14px;box-shadow:0 12px 30px rgba(0,0,0,0.45);align-items:center;justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:10px;height:10px;border-radius:50%;background:var(--bm-success);animation:bmPulse 1.1s infinite;"></div>
@@ -158,7 +158,7 @@
         </div>
       </div>
 
-      <!-- PREMIUM CALL SCREEN -->
+      <!-- VIDEO CALL OVERLAY -->
       <div id="bmVideoContainer" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at 30% 20%, #14172a 0%, #03040A 65%);z-index:20;flex-direction:column;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-shrink:0;">
           <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);backdrop-filter:blur(10px);padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">
@@ -299,18 +299,12 @@
     }
   }
 
-  document.getElementById('bmLeaveRoomBtn').onclick = function(){
-    showScreen("setup");
-  };
+  document.getElementById('bmLeaveRoomBtn').onclick = function(){ showScreen("setup"); };
+  document.getElementById('bmBackToChatBtn').onclick = function(){ showScreen("chat"); };
 
-  document.getElementById('bmBackToChatBtn').onclick = function(){
-    showScreen("chat");
-  };
-
-  /* ---------- MESSAGES: identity + delete ---------- */
-
-  var avatarCache = {}; // username -> avatar_url
-  var knownPeersInRoom = {}; // peer_id -> username, built from message history
+  /* MESSAGES ENGINE */
+  var avatarCache = {};
+  var knownPeersInRoom = {};
 
   async function loadMessages(){
     if(!currentRoom || !client) return;
@@ -372,9 +366,9 @@
           delBtn.className = 'bm-msg-del';
           delBtn.textContent = '✕';
           delBtn.title = 'Delete message';
-          delBtn.onclick = function(msgId){
+          delBtn.onclick = (function(msgId){
             return function(){ deleteMessage(msgId); };
-          }(m.id);
+          })(m.id);
           bubbleWrap.appendChild(delBtn);
           row.onclick = function(){ row.classList.toggle('bm-show-del'); };
         }
@@ -414,6 +408,7 @@
       loadMessages();
     }
   };
+
   document.getElementById('bmMsgInput').addEventListener('keydown', function(e){
     if(e.key === 'Enter') document.getElementById('bmSendBtn').click();
   });
@@ -431,10 +426,7 @@
 
     var up = await client.storage.from('chat-media').upload(path, file, { contentType: file.type || undefined });
     e.target.value = '';
-    if(up.error){
-      alert('Upload failed: ' + up.error.message);
-      return;
-    }
+    if(up.error){ alert('Upload failed: ' + up.error.message); return; }
     var pub = client.storage.from('chat-media').getPublicUrl(path);
 
     var res = await client.from("messages").insert({
@@ -451,11 +443,7 @@
     loadMessages();
   });
 
-  /* =========================================================
-     FACETIME — group WebRTC calling (mesh, up to 5 people),
-     signaled entirely through the `facetime` table.
-     ========================================================= */
-
+  /* WEBRTC CALLING ENGINE */
   var RTC_CONFIG = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
   var MAX_PARTICIPANTS = 5;
 
@@ -470,9 +458,7 @@
   var callTimerInterval = null, callStartedAt = null;
   var heartbeatInterval = null, presenceCheckInterval = null;
   var audioCtx = null;
-
-  var ringInterval = null;
-  var ringAudioCtx = null;
+  var ringInterval = null, ringAudioCtx = null;
 
   function requestNotifyPermission(){
     try {
@@ -549,18 +535,15 @@
   async function handleSignal(row){
     if(row.type === 'call-invite'){
       showIncomingBanner(row, (row.from_username || 'Someone') + ' invited you to the call');
-
     } else if(row.type === 'offer'){
       if(inCall){
         await acceptMeshOffer(row);
       } else {
         showIncomingBanner(row, (row.from_username || 'Someone') + ' is calling…');
       }
-
     } else if(row.type === 'answer'){
       var pc = pcMap[row.from_peer_id];
       if(pc){ await pc.setRemoteDescription(new RTCSessionDescription(row.payload)); flushQueuedIce(row.from_peer_id); }
-
     } else if(row.type === 'ice-candidate'){
       var pc2 = pcMap[row.from_peer_id];
       if(pc2 && pc2.remoteDescription){
@@ -568,7 +551,6 @@
       } else {
         (queuedIce[row.from_peer_id] = queuedIce[row.from_peer_id] || []).push(row.payload);
       }
-
     } else if(row.type === 'call-end' || row.type === 'call-reject'){
       removeParticipant(row.from_peer_id);
       if(pendingInvite && pendingInvite.from_peer_id === row.from_peer_id){
@@ -798,7 +780,6 @@
       document.getElementById('bmPopoutBtn').style.display = 'inline-flex';
     }
   } catch(e) {
-    // cross-origin frame access blocked, which itself means we're embedded
     document.getElementById('bmPopoutBtn').style.display = 'inline-flex';
   }
 
@@ -863,6 +844,7 @@
     this.style.opacity = micOn ? 1 : 0.45;
     this.textContent = micOn ? '🎤' : '🔇';
   };
+
   document.getElementById('bmToggleCamBtn').onclick = function(){
     if(!localStream) return;
     camOn = !camOn;
